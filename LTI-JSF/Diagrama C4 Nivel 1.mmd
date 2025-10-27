@@ -1,0 +1,21 @@
+---
+config:
+  layout: dagre
+---
+flowchart TB
+ subgraph s1["Sistema LTI ATS"]
+        SISTEMA["Sistema LTI<br>Applicant Tracking System<br><br>Gestiona candidatos, ofertas laborales<br>y filtrado inteligente con IA"]
+  end
+    RECLUTADOR["Reclutador<br>Personal de RRHH<br><br>Gestiona candidatos,<br>publica ofertas,<br>ejecuta filtrados"] -- Gestiona candidatos<br>Publica ofertas<br>Ejecuta filtrados IA --> SISTEMA
+    SISTEMA -- Envía notificaciones<br>de estado --> CANDIDATO["Candidato<br>Postulante a empleo<br><br>Recibe notificaciones<br>sobre su aplicación"]
+    SISTEMA -- Publica ofertas<br>vía API REST --> PORTALES["Portales de Empleo<br>Sistema Externo<br><br>LinkedIn, Indeed,<br>CompuTrabajo, Bumeran<br><br>Reciben y alojan<br>ofertas laborales"]
+    SISTEMA -- Envía emails<br>automatizados --> EMAIL["Sistema de Email<br>Servicio Externo<br><br>SMTP Server<br><br>Envía notificaciones<br>a candidatos"]
+    PORTALES -. Recibe aplicaciones<br>y estadísticas .-> SISTEMA
+     SISTEMA:::systemStyle
+     RECLUTADOR:::personStyle
+     CANDIDATO:::personStyle
+     PORTALES:::externalStyle
+     EMAIL:::externalStyle
+    classDef systemStyle fill:#1168bd,stroke:#0b4884,stroke-width:3px,color:#ffffff
+    classDef personStyle fill:#08427b,stroke:#052e56,stroke-width:2px,color:#ffffff
+    classDef externalStyle fill:#999999,stroke:#6b6b6b,stroke-width:2px,color:#ffffff

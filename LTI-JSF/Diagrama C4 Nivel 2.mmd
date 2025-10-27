@@ -1,0 +1,43 @@
+---
+config:
+  layout: dagre
+---
+flowchart TB
+ subgraph LTI["Sistema LTI ATS"]
+        WEB["Aplicación Web<br>React SPA<br><br>Interfaz de usuario<br>para reclutadores<br>Puerto 3000"]
+        API["Aplicación Backend<br>Node.js + Express + Prisma<br><br>Lógica de negocio<br>API REST<br>CU-01: Gestión Candidatos<br>CU-02: Publicación Ofertas<br>Puerto 4000"]
+        QUEUE["Cola de Mensajes<br>Redis / RabbitMQ<br><br>Gestión de tareas<br>asíncronas<br>Puerto 6379 / 5672"]
+        WORKERS["Workers de IA<br>Python + Celery + spaCy<br><br>CU-03: Filtrado IA<br>Análisis de CVs<br>Scoring de candidatos"]
+        DB[("Base de Datos<br>PostgreSQL 15+<br><br>Candidatos, Ofertas<br>Aplicaciones, Usuarios<br>Puerto 5432")]
+        CACHE["Cache<br>Redis<br><br>Sesiones<br>Consultas frecuentes<br>Puerto 6379"]
+        STORAGE["Almacenamiento<br>MinIO S3-compatible<br><br>CVs y documentos<br>encriptados<br>Puerto 9000"]
+  end
+    RECLUTADOR["Reclutador<br>Personal de RRHH"] -- Usa navegador web<br>HTTPS --> WEB
+    WEB -- Llamadas API REST<br>JSON/HTTPS --> API
+    API -- Lee/Escribe<br>SQL via Prisma --> DB
+    API -- Cache sesiones<br>y consultas --> CACHE
+    API -- Sube/descarga<br>documentos --> STORAGE
+    API -- Encola tareas<br>filtrado IA --> QUEUE
+    API -- Publica ofertas<br>API REST --> PORTALES["Portales de Empleo<br>LinkedIn, Indeed, etc."]
+    API -- Envía emails<br>SMTP --> EMAIL["Servicio SMTP<br>Email Server"]
+    QUEUE -- Distribuye tareas --> WORKERS
+    WORKERS -- Lee CVs --> STORAGE
+    WORKERS -- Guarda resultados<br>filtrado --> DB
+    API -. Notifica estado .-> CANDIDATO["Candidato<br>Postulante"]
+     WEB:::frontend
+     API:::backend
+     QUEUE:::worker
+     WORKERS:::worker
+     DB:::data
+     CACHE:::data
+     STORAGE:::data
+     RECLUTADOR:::person
+     PORTALES:::external
+     EMAIL:::external
+     CANDIDATO:::person
+    classDef frontend fill:#61dafb,stroke:#333,stroke-width:2px,color:#000
+    classDef backend fill:#68a063,stroke:#333,stroke-width:2px,color:#fff
+    classDef worker fill:#3776ab,stroke:#333,stroke-width:2px,color:#fff
+    classDef data fill:#336791,stroke:#333,stroke-width:2px,color:#fff
+    classDef external fill:#999999,stroke:#666,stroke-width:2px,color:#fff
+    classDef person fill:#08427b,stroke:#052e56,stroke-width:2px,color:#fff

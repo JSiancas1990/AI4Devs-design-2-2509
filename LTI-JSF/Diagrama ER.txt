@@ -1,0 +1,251 @@
+erDiagram
+    USUARIO {
+        int id PK
+        string nombre_completo
+        string email UK
+        string password_hash
+        string rol
+        datetime fecha_creacion
+        datetime ultima_sesion
+        boolean activo
+    }
+
+    CANDIDATO {
+        int id PK
+        string nombre_completo
+        string email UK
+        string telefono
+        string ciudad
+        string pais
+        string linkedin_url
+        string portafolio_url
+        datetime fecha_registro
+        datetime fecha_actualizacion
+        int creado_por FK
+        int actualizado_por FK
+        boolean eliminado
+        datetime fecha_eliminacion
+    }
+
+    EXPERIENCIA_LABORAL {
+        int id PK
+        int candidato_id FK
+        string empresa
+        string cargo
+        date fecha_inicio
+        date fecha_fin
+        string responsabilidades
+        boolean actual
+    }
+
+    FORMACION_ACADEMICA {
+        int id PK
+        int candidato_id FK
+        string institucion
+        string titulo
+        string area_estudio
+        int año_graduacion
+        string nivel_educativo
+    }
+
+    HABILIDAD {
+        int id PK
+        string nombre UK
+        string categoria
+        string descripcion
+    }
+
+    CANDIDATO_HABILIDAD {
+        int id PK
+        int candidato_id FK
+        int habilidad_id FK
+        string nivel_dominio
+        int años_experiencia
+    }
+
+    DOCUMENTO {
+        int id PK
+        int candidato_id FK
+        string tipo_documento
+        string nombre_archivo
+        string ruta_archivo
+        string formato
+        int tamaño_bytes
+        datetime fecha_subida
+        boolean encriptado
+    }
+
+    HISTORIAL_CAMBIO {
+        int id PK
+        int candidato_id FK
+        int usuario_id FK
+        string tipo_operacion
+        text campos_modificados
+        datetime fecha_cambio
+    }
+
+    OFERTA_LABORAL {
+        int id PK
+        string titulo
+        string departamento
+        string tipo_contrato
+        string modalidad_trabajo
+        string ubicacion
+        date fecha_inicio_deseada
+        text descripcion_puesto
+        text responsabilidades
+        text requisitos_obligatorios
+        text requisitos_deseables
+        decimal salario_min
+        decimal salario_max
+        boolean salario_visible
+        text beneficios
+        date fecha_limite
+        int numero_vacantes
+        string visibilidad
+        string estado
+        datetime fecha_creacion
+        datetime fecha_publicacion
+        int creado_por FK
+        boolean activo
+    }
+
+    PORTAL_EXTERNO {
+        int id PK
+        string nombre UK
+        string url_base
+        string tipo_portal
+        boolean activo
+        text credenciales_api
+        datetime ultima_sincronizacion
+    }
+
+    PUBLICACION_PORTAL {
+        int id PK
+        int oferta_id FK
+        int portal_id FK
+        string id_externo
+        string url_publicacion
+        string estado_publicacion
+        datetime fecha_publicacion
+        datetime fecha_expiracion
+        int visualizaciones
+        int clics
+        text mensaje_error
+    }
+
+    LOG_PUBLICACION {
+        int id PK
+        int oferta_id FK
+        int portal_id FK
+        string accion
+        string resultado
+        text mensaje
+        datetime fecha_hora
+    }
+
+    APLICACION {
+        int id PK
+        int candidato_id FK
+        int oferta_id FK
+        datetime fecha_aplicacion
+        string estado
+        string fuente_aplicacion
+        text notas
+    }
+
+    CRITERIO_FILTRADO {
+        int id PK
+        int oferta_id FK
+        int creado_por FK
+        string nombre_perfil
+        text palabras_clave
+        text habilidades_requeridas
+        int años_experiencia_minima
+        string nivel_educativo_minimo
+        text criterios_opcionales
+        text ponderaciones
+        datetime fecha_creacion
+        boolean es_plantilla
+    }
+
+    RESULTADO_FILTRADO {
+        int id PK
+        int criterio_id FK
+        int aplicacion_id FK
+        decimal scoring_total
+        string categoria
+        int posicion_ranking
+        text justificacion_detallada
+        text scores_parciales
+        datetime fecha_analisis
+        int creditos_consumidos
+    }
+
+    HISTORIAL_FILTRADO {
+        int id PK
+        int oferta_id FK
+        int criterio_id FK
+        int ejecutado_por FK
+        int candidatos_procesados
+        int candidatos_exitosos
+        int candidatos_fallidos
+        decimal scoring_promedio
+        datetime fecha_ejecucion
+        int duracion_segundos
+    }
+
+    FEEDBACK_IA {
+        int id PK
+        int resultado_filtrado_id FK
+        int usuario_id FK
+        int calificacion
+        text comentarios
+        boolean resultado_util
+        datetime fecha_feedback
+    }
+
+    AUDITORIA {
+        int id PK
+        string tabla_afectada
+        int registro_id
+        int usuario_id FK
+        string operacion
+        text datos_anteriores
+        text datos_nuevos
+        string ip_address
+        datetime fecha_hora
+    }
+
+    %% Relaciones CU-01: Gestionar Perfil de Candidato
+    USUARIO ||--o{ CANDIDATO : "crea/actualiza"
+    CANDIDATO ||--o{ EXPERIENCIA_LABORAL : "tiene"
+    CANDIDATO ||--o{ FORMACION_ACADEMICA : "posee"
+    CANDIDATO ||--o{ CANDIDATO_HABILIDAD : "tiene"
+    HABILIDAD ||--o{ CANDIDATO_HABILIDAD : "pertenece"
+    CANDIDATO ||--o{ DOCUMENTO : "adjunta"
+    CANDIDATO ||--o{ HISTORIAL_CAMBIO : "registra"
+    USUARIO ||--o{ HISTORIAL_CAMBIO : "realiza"
+
+    %% Relaciones CU-02: Publicar Oferta Laboral
+    USUARIO ||--o{ OFERTA_LABORAL : "crea"
+    OFERTA_LABORAL ||--o{ PUBLICACION_PORTAL : "publicada_en"
+    PORTAL_EXTERNO ||--o{ PUBLICACION_PORTAL : "aloja"
+    OFERTA_LABORAL ||--o{ LOG_PUBLICACION : "registra"
+    PORTAL_EXTERNO ||--o{ LOG_PUBLICACION : "involucrado"
+
+    %% Relaciones CU-03: Filtrar Candidatos Automáticamente
+    CANDIDATO ||--o{ APLICACION : "aplica"
+    OFERTA_LABORAL ||--o{ APLICACION : "recibe"
+    OFERTA_LABORAL ||--o{ CRITERIO_FILTRADO : "define"
+    USUARIO ||--o{ CRITERIO_FILTRADO : "configura"
+    CRITERIO_FILTRADO ||--o{ RESULTADO_FILTRADO : "genera"
+    APLICACION ||--|| RESULTADO_FILTRADO : "evaluada_en"
+    CRITERIO_FILTRADO ||--o{ HISTORIAL_FILTRADO : "ejecutado_en"
+    USUARIO ||--o{ HISTORIAL_FILTRADO : "ejecuta"
+    OFERTA_LABORAL ||--o{ HISTORIAL_FILTRADO : "procesa"
+    RESULTADO_FILTRADO ||--o{ FEEDBACK_IA : "recibe"
+    USUARIO ||--o{ FEEDBACK_IA : "proporciona"
+
+    %% Auditoría general
+    USUARIO ||--o{ AUDITORIA : "genera"

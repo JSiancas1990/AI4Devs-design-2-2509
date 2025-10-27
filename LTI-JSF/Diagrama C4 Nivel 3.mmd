@@ -1,0 +1,78 @@
+---
+config:
+  layout: elk
+---
+flowchart TB
+ subgraph QUEUE_CONTAINER["Cola de Mensajes - Redis/RabbitMQ"]
+        QUEUE_MGR["Gestor de Colas<br><br>Administra colas por prioridad<br>- Alta: filtrados urgentes<br>- Normal: filtrados estándar<br>- Baja: re-análisis"]
+        RETRY["Sistema de Reintentos<br><br>Reencola tareas fallidas<br>con backoff exponencial"]
+        DLQ["Dead Letter Queue<br><br>Almacena tareas<br>con fallos persistentes"]
+  end
+ subgraph WORKERS["Workers de Procesamiento"]
+        W1["Worker Instance 1<br>Python Process<br><br>Procesa 1-5 candidatos<br>simultáneos"]
+        W2["Worker Instance 2<br>Python Process<br><br>Procesa 1-5 candidatos<br>simultáneos"]
+        WN["Worker Instance N<br>Python Process<br><br>Escalable según demanda"]
+  end
+ subgraph WORKER_POOL["Pool de Workers - Python + Celery"]
+        ORCHESTRATOR["Orquestador de Tareas<br>Celery Beat/Worker<br><br>Distribuye tareas entre workers<br>Monitorea carga y salud<br>Escala automáticamente"]
+        WORKERS
+  end
+ subgraph AI_ENGINE["Motor de IA - spaCy + NLP"]
+        PARSER["Analizador de CVs<br><br>Extrae texto de<br>PDF, DOC, DOCX<br>Limpieza y normalización"]
+        NLP["Procesador NLP<br>spaCy + Transformers<br><br>Tokenización<br>NER: entidades nombradas<br>POS: análisis sintáctico<br>Embeddings semánticos"]
+        MATCHER["Motor de Matching<br><br>Análisis semántico<br>Similitud coseno<br>Matching skills-requirements"]
+        SCORER["Calculador de Scoring<br><br>Aplica ponderaciones<br>Calcula score 0-100<br>Genera justificación detallada"]
+  end
+ subgraph RESULT_MGR["Gestor de Resultados"]
+        RANKER["Generador de Rankings<br><br>Ordena candidatos por score<br>Categoriza: Excelente, Bueno<br>Aceptable, No cumple"]
+        REPORTER["Generador de Reportes<br><br>Crea justificaciones<br>Scores parciales por criterio<br>Recomendaciones"]
+  end
+ subgraph ASYNC["Contenedor: Procesamiento Asíncrono"]
+        QUEUE_CONTAINER
+        WORKER_POOL
+        AI_ENGINE
+        RESULT_MGR
+  end
+    API["Aplicación Backend<br>Node.js + Express"] -- "1\. Encola tarea filtrado<br>JSON: oferta_id, criterios" --> QUEUE_MGR
+    QUEUE_MGR -- "2\. Asigna prioridad<br>y almacena" --> RETRY
+    QUEUE_MGR -. Si falla 3+ veces .-> DLQ
+    RETRY -- "3\. Notifica tarea<br>disponible" --> ORCHESTRATOR
+    ORCHESTRATOR -- "4\. Asigna a worker<br>libre" --> W1 & W2 & WN
+    W1 -- "5\. Inicia procesamiento" --> PARSER
+    W2 -- "5\. Inicia procesamiento" --> PARSER
+    WN -- "5\. Inicia procesamiento" --> PARSER
+    PARSER -- "6\. Descarga CV" --> STORAGE["Almacenamiento<br>MinIO"]
+    PARSER -- "7\. Texto extraído" --> NLP
+    NLP -- "8\. Features extraídas" --> MATCHER
+    MATCHER -- "9\. Similaridades<br>calculadas" --> SCORER
+    SCORER -- "10\. Score + detalles" --> RANKER
+    RANKER -- "11\. Lista ordenada" --> REPORTER
+    REPORTER -- "12\. Reporte completo" --> W1 & W2 & WN
+    W1 -- "13\. Persiste resultados" --> DB[("Base de Datos<br>PostgreSQL")]
+    W2 -- "13\. Persiste resultados" --> DB
+    WN -- "13\. Persiste resultados" --> DB
+    W1 -. "14\. Notifica<br>completado" .-> API
+    W2 -. "14\. Notifica<br>completado" .-> API
+    WN -. "14\. Notifica<br>completado" .-> API
+     API:::external
+     DB:::database
+     STORAGE:::external
+     QUEUE_MGR:::queue
+     RETRY:::queue
+     DLQ:::queue
+     ORCHESTRATOR:::worker
+     W1:::worker
+     W2:::worker
+     WN:::worker
+     PARSER:::ai
+     NLP:::ai
+     MATCHER:::ai
+     SCORER:::ai
+     RANKER:::result
+     REPORTER:::result
+    classDef queue fill:#dc382d,stroke:#333,stroke-width:2px,color:#fff
+    classDef worker fill:#3776ab,stroke:#333,stroke-width:2px,color:#fff
+    classDef ai fill:#ff6b35,stroke:#333,stroke-width:2px,color:#fff
+    classDef result fill:#4ecdc4,stroke:#333,stroke-width:2px,color:#000
+    classDef external fill:#68a063,stroke:#333,stroke-width:2px,color:#fff
+    classDef database fill:#336791,stroke:#333,stroke-width:2px,color:#fff
